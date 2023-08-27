@@ -85,12 +85,25 @@ def tex_content_to_svg_file(
 
 
 def create_tex_svg(full_tex: str, svg_file: str, compiler: str) -> None:
+    pdf_flag = False
+    
+    if r"\begin{tikzpicture}" in full_tex or r"\begin{tikzcd}" in full_tex or r"\includegraphics" in full_tex:
+        pdf_flag = True
+    
     if compiler == "latex":
-        program = "latex"
-        dvi_ext = ".dvi"
+        if pdf_flag:
+            program ="latex -output-format=pdf"
+            dvi_ext = ".pdf"
+        else:
+            program = "latex"
+            dvi_ext = ".dvi"
     elif compiler == "xelatex":
-        program = "xelatex -no-pdf"
-        dvi_ext = ".xdv"
+        if pdf_flag:
+            program ="xelatex"
+            dvi_ext = ".pdf"
+        else:
+            program = "xelatex -no-pdf"
+            dvi_ext = ".xdv"
     else:
         raise NotImplementedError(
             f"Compiler '{compiler}' is not implemented"
@@ -101,7 +114,7 @@ def create_tex_svg(full_tex: str, svg_file: str, compiler: str) -> None:
     with open(root + ".tex", "w", encoding="utf-8") as tex_file:
         tex_file.write(full_tex)
 
-    # tex to dvi
+    # tex to dvi,xdv or pdf
     if os.system(" ".join((
         program,
         "-interaction=batchmode",
@@ -124,18 +137,34 @@ def create_tex_svg(full_tex: str, svg_file: str, compiler: str) -> None:
                 )
         raise LatexError(error_str)
 
-    # dvi to svg
-    os.system(" ".join((
-        "dvisvgm",
-        f"\"{root}{dvi_ext}\"",
-        "-n",
-        "-v",
-        "0",
-        "-o",
-        f"\"{svg_file}\"",
-        ">",
-        os.devnull
-    )))
+    if pdf_flag:
+        # pdf to svg
+        os.system(" ".join((
+            "dvisvgm",
+            "--pdf",
+            f"\"{root}{dvi_ext}\"",
+            "-n",
+            "-v",
+            "0",
+            "-o",
+            f"\"{svg_file}\"",
+            ">",
+            os.devnull
+        )))
+    
+    else:
+        # dvi,xdv to svg
+        os.system(" ".join((
+            "dvisvgm",
+            f"\"{root}{dvi_ext}\"",
+            "-n",
+            "-v",
+            "0",
+            "-o",
+            f"\"{svg_file}\"",
+            ">",
+            os.devnull
+        )))
 
     # Cleanup superfluous documents
     for ext in (".tex", dvi_ext, ".log", ".aux"):

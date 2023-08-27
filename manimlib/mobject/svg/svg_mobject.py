@@ -300,7 +300,7 @@ class VMobjectFromSVGPath(VMobject):
         # Get rid of arcs
         path_obj.approximate_arcs_with_quads()
         self.path_obj = path_obj
-        super().__init__(**kwargs)
+        super().__init__(use_simple_quadratic_approx=True,**kwargs)
 
     def init_points(self) -> None:
         # After a given svg_path has been converted into points, the result
