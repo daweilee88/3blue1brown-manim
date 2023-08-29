@@ -53,7 +53,7 @@ def get_tex_config() -> dict[str, str]:
 
 def tex_content_to_svg_file(
     content: str, template: str, additional_preamble: str,
-    short_tex: str
+    short_tex: str, pdf_flag: bool=True
 ) -> str:
     tex_config = get_tex_config()
     if not template or template == tex_config["template"]:
@@ -80,16 +80,11 @@ def tex_content_to_svg_file(
     if not os.path.exists(svg_file):
         # If svg doesn't exist, create it
         with display_during_execution("Writing " + short_tex):
-            create_tex_svg(full_tex, svg_file, compiler)
+            create_tex_svg(full_tex, svg_file, compiler, pdf_flag)
     return svg_file
 
 
-def create_tex_svg(full_tex: str, svg_file: str, compiler: str) -> None:
-    pdf_flag = False
-    
-    if r"\begin{tikzpicture}" in full_tex or r"\begin{tikzcd}" in full_tex or r"\includegraphics" in full_tex:
-        pdf_flag = True
-    
+def create_tex_svg(full_tex: str, svg_file: str, compiler: str, pdf_flag: bool=True) -> None:    
     if compiler == "latex":
         if pdf_flag:
             program ="latex -output-format=pdf"
