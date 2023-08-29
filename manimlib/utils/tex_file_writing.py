@@ -36,6 +36,7 @@ def get_tex_config() -> dict[str, str]:
     {
         "template": "default",
         "compiler": "latex",
+        "documentclass": \documentclass[preview]{standalone},
         "preamble": "..."
     }
     """
@@ -46,6 +47,7 @@ def get_tex_config() -> dict[str, str]:
         SAVED_TEX_CONFIG.update({
             "template": template_name,
             "compiler": template_config["compiler"],
+            "documentclass": template_config["documentclass"],
             "preamble": template_config["preamble"]
         })
     return SAVED_TEX_CONFIG
@@ -53,21 +55,27 @@ def get_tex_config() -> dict[str, str]:
 
 def tex_content_to_svg_file(
     content: str, template: str, additional_preamble: str,
-    short_tex: str, pdf_flag: bool=True
+    short_tex: str, documentclass: str="", pdf_flag: bool=True
 ) -> str:
     tex_config = get_tex_config()
     if not template or template == tex_config["template"]:
         compiler = tex_config["compiler"]
+        _documentclass = tex_config["documentclass"]
         preamble = tex_config["preamble"]
     else:
         config = get_tex_template_config(template)
         compiler = config["compiler"]
+        _documentclass = tex_config["documentclass"]
         preamble = config["preamble"]
 
     if additional_preamble:
         preamble += "\n" + additional_preamble
+        
+    if documentclass is None or documentclass == "":
+        documentclass = _documentclass
+    
     full_tex = "\n\n".join((
-        "\\documentclass[preview]{standalone}",
+        documentclass,
         preamble,
         "\\begin{document}",
         content,
@@ -99,6 +107,13 @@ def create_tex_svg(full_tex: str, svg_file: str, compiler: str, pdf_flag: bool=T
         else:
             program = "xelatex -no-pdf"
             dvi_ext = ".xdv"
+    elif compiler == "lualatex":
+        if pdf_flag:
+            program = "lualatex -output-format=pdf"
+            dvi_ext = ".pdf"
+        else:
+            program = "lualatex"
+            dvi_ext = ".dvi"
     else:
         raise NotImplementedError(
             f"Compiler '{compiler}' is not implemented"
